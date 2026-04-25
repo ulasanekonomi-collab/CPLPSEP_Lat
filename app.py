@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 
 # 1. Konfigurasi
-st.set_page_config(page_title="Penyelarasan CPLEP - Unisba", layout="wide")
+st.set_page_config(page_title="Analisis Stakeholder SPK", page_icon="📊", layout="wide")
 st.title("📊 Sistem Penyelarasan CPLEP")
 st.subheader("Revisi Rumus Distribusi Kompetensi (Skala 1-4)")
 
@@ -15,7 +15,8 @@ keterampilan_cols = ["Database", "Komputasi", "Presentasi", "Pengembangan Karir"
 all_cols = sikap_cols + pengetahuan_cols + keterampilan_cols
 
 # 3. SIDEBAR - Bobot Stakeholder
-st.sidebar.header("1. Bobot Stakeholder (1-5)")
+st.sidebar.title("🧭 Navigasi Sistem")
+st.sidebar.markdown("---")
 # Kita buat dictionary untuk menampung nilai slider secara real-time
 bobot_map = {}
 for s in stakeholders:
