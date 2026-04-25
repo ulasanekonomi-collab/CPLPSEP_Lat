@@ -32,47 +32,55 @@ st.text_area(f"Catatan Dekan untuk {prodi}:", "Dokumen sesuai standar OBE.")
 if st.button("Kirim Validasi Fakultas"):
     st.balloons()
     st.success("Rekomendasi Terkirim!")
-# --- BAGIAN BARU: INSTRUMEN STRESS TEST BERBASIS DOKUMEN ---
+# --- UPDATE: INSTRUMEN STRESS TEST DENGAN PARAMETER OBJEKTIF ---
 st.divider()
 st.write("### 🧪 Instrumen Stress Test (Vertical Alignment Analysis)")
-st.info("Gunakan instrumen ini untuk memastikan Visi tidak berhenti di level normatif, tapi teroperasionalkan dalam sistem kurikulum.")
+st.info("Parameter ini membantu pimpinan menilai apakah Visi sudah turun ke level operasional atau masih di level normatif.")
 
-# Pertanyaan kunci berdasarkan metode Stress Test Akang
-pertanyaan_audit = [
-    "Visi → CPL: Apakah elemen utama visi (Kemaslahatan & Society 5.0) telah diterjemahkan secara eksplisit dalam CPL?",
-    "CPL → Mata Kuliah: Apakah struktur mata kuliah telah merepresentasikan CPL secara proporsional?",
-    "Mata Kuliah → OBLT: Apakah aktivitas pembelajaran secara nyata melatih kompetensi yang sesuai dengan visi?",
-    "Pembelajaran → OBAE: Apakah capaian terkait visi dapat diukur secara objektif dan berbasis bukti?"
-]
+# Definisi Parameter berdasarkan dokumen Akang
+audit_params = {
+    "Visi → CPL": {
+        "tanya": "Apakah elemen 'Kemaslahatan' & 'Society 5.0' sudah muncul eksplisit di CPL?",
+        "parameter": "Sangat Kuat jika: Muncul di semua ranah (Sikap, Pengetahuan, Keterampilan) secara spesifik."
+    },
+    "CPL → Mata Kuliah": {
+        "tanya": "Apakah struktur Mata Kuliah sudah merepresentasikan CPL secara proporsional?",
+        "parameter": "Sangat Kuat jika: Mata kuliah inti (bukan hanya MK Agama/Pilihan) memuat konten Visi."
+    },
+    "MK → OBLT": {
+        "tanya": "Apakah metode pembelajaran secara nyata melatih kompetensi Visi?",
+        "parameter": "Sangat Kuat jika: Menggunakan Case-Based atau Project-Based dengan data riil digital."
+    },
+    "OBLT → OBAE": {
+        "tanya": "Apakah capaian Visi dapat diukur secara objektif berbasis bukti?",
+        "parameter": "Sangat Kuat jika: Memiliki Rubrik Penilaian yang mengukur aspek nilai dan teknologi secara terukur."
+    }
+}
 
-with st.expander("📝 Form Audit Kesesuaian Kurikulum"):
+with st.expander("📝 Form Audit dengan Parameter"):
     skor_audit = []
-    for i, tanya in enumerate(pertanyaan_audit):
-        st.write(f"**{tanya}**")
-        skor = st.select_slider(f"Penilaian Q{i+1}:", 
-                               options=["Sangat Lemah", "Lemah", "Cukup", "Kuat", "Sangat Kuat"], 
-                               key=f"st_audit_{i}")
+    for key, val in audit_params.items():
+        st.write(f"**{key}**")
+        st.markdown(f"*{val['tanya']}*")
+        st.caption(f"📍 **Parameter:** {val['parameter']}") # Ini parameternya, Kang!
+        
+        skor = st.select_slider(f"Skor {key}:", 
+                               options=["Lemah", "Cukup", "Kuat", "Sangat Kuat"], 
+                               key=f"audit_v2_{key}")
         skor_audit.append(skor)
+        st.write("---")
     
-    st.divider()
-    st.write("#### 🔍 Analisis Kesenjangan (Gap Analysis)")
-    catatan_gap = st.text_area("Masukkan temuan kesenjangan antara desain normatif dan implementasi operasional:", 
-                               placeholder="Contoh: Integrasi nilai kemaslahatan masih cenderung terpisah dalam mata kuliah tertentu...")
+    catatan_gap = st.text_area("Gap Analysis (Temuan Kesenjangan):", 
+                               placeholder="Tuliskan di sini jika parameter di atas belum terpenuhi...")
 
-# Tombol Eksekusi Analisis
-if st.button("Jalankan Uji Kesesuaian"):
-    st.subheader("🏁 Kesimpulan Stress Test")
+# Tombol Analisis
+if st.button("Jalankan Audit Kesesuaian"):
+    st.subheader("🏁 Hasil Kesimpulan Stress Test")
     
-    # Menampilkan hasil berdasarkan prinsip dokumen Akang
-    if "Sangat Lemah" in skor_audit or "Lemah" in skor_audit:
-        st.error("🚨 HASIL: Visi belum sepenuhnya terinternalisasi secara operasional.")
-        st.write("**Rekomendasi Langkah Lanjutan:**")
-        st.markdown("""
-        - **Refinement CPL:** Penajaman rumusan agar lebih operasional dan terukur[cite: 33].
-        - **Integrasi Mata Kuliah:** Menanamkan nilai kemaslahatan dalam mata kuliah inti ekonomi[cite: 25].
-        - **Penguatan OBAE:** Pengembangan instrumen asesmen untuk dimensi nilai dan teknologi[cite: 27].
-        """)
+    # Logika evaluasi
+    if "Sangat Kuat" in skor_audit and "Lemah" not in skor_audit:
+        st.success("✅ KURIKULUM MATANG: Visi telah teroperasionalkan dengan baik hingga level asesmen.")
     else:
-        st.success("✅ HASIL: Kurikulum telah memiliki landasan kuat secara filosofis dan operasional[cite: 23].")
+        st.warning("⚠️ KURIKULUM KONTEKSTUAL: Visi masih dominan di level normatif/konsep. Perlu penajaman di level OBLT & OBAE.")
     
     st.balloons()
