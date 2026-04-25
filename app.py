@@ -1,91 +1,88 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 
-# 1. Konfigurasi Halaman agar terlihat Luas & Modern
-st.set_page_config(page_title="Dashboard Analisis CPL", layout="wide", page_icon="📈")
+# 1. Judul Aplikasi
+st.set_page_config(page_title="Penyelarasan CPLEP - Unisba", layout="wide")
+st.title("📊 Sistem Penyelarasan CPLEP")
+st.subheader("Estimasi Komposisi Kurikulum Berdasarkan Kepentingan Stakeholder")
 
-st.title("📊 Dashboard Komputasi Estimasi Kurikulum (CPL)")
-st.markdown("""
-Sistem ini mengestimasi komposisi ideal kurikulum berdasarkan **Weighted Stakeholder Analysis**. 
-Silakan atur bobot kepentingan di samping dan detail persepsi di tabel bawah.
-""")
-
-# 2. Inisialisasi Data Stakeholder
+# 2. Definisi Struktur Stakeholder & Kolom
 stakeholders = [
-    "Pengguna Lulusan", "Alumni", "Dosen Prodi", "Mahasiswa Aktif", 
-    "Asosiasi Profesi", "Pemerintah (Dikti)", "Orang Tua", "Ahli Kurikulum", "Mitra Strategis"
+    "Mahasiswa", "PSEP", "Fakultas", "Universitas", "Yayasan", 
+    "LSP", "Bisnis", "Pemerintahan", "UCDC"
 ]
 
-# 3. Sidebar: Pengaturan Bobot Kepentingan
-st.sidebar.header("🎯 Bobot Kepentingan")
-st.sidebar.info("Skala 1 (Rendah) s/d 5 (Kritis)")
+# Definisi Sub-Unsur
+sikap_cols = [
+    "Integritas", "Kemandirian", "Kerjasama tim", "Komunikasi efektif", 
+    "Kreatif dan inovatif", "Tanggung jawab", "Empati dan peduli", 
+    "Kedisiplinan", "Keterbukaan", "Etika dan Moral"
+]
+pengetahuan_cols = [
+    "Kompetensi Inti Keilmuan", "Kompetensi Kuantitatif", 
+    "Kompetensi Kekhususan Dasar", "Kompetensi Keahlian", "Agama Islam"
+]
+keterampilan_cols = [
+    "Database", "Komputasi", "Presentasi", "Pengembangan Karir"
+]
+
+all_cols = sikap_cols + pengetahuan_cols + keterampilan_cols
+
+# 3. Sidebar: Bobot Kepentingan Stakeholder
+st.sidebar.header("1. Tingkat Kepentingan (1-5)")
 bobot_list = []
 for s in stakeholders:
-    b = st.sidebar.select_slider(f"{s}", options=[1, 2, 3, 4, 5], value=3, key=s)
+    b = st.sidebar.slider(f"Bobot {s}", 1, 5, 3)
     bobot_list.append(b)
 
-# 4. Main Area: Editor Data Persepsi
-st.subheader("📝 Matriks Persepsi Stakeholder")
-default_data = {
-    "Sikap": [90, 85, 80, 70, 85, 95, 90, 80, 75],
-    "Pengetahuan": [70, 75, 90, 80, 85, 80, 70, 85, 80],
-    "Keterampilan": [85, 80, 80, 90, 85, 75, 70, 85, 85]
-}
+# 4. Input Data Persepsi
+st.write("### 2. Matriks Persepsi Stakeholder")
+st.caption("Isi nilai (0-100) untuk setiap sub-unsur di bawah ini:")
+
+# Membuat template data awal (default 80 agar tidak kosong)
+default_data = {col: [80] * len(stakeholders) for col in all_cols}
 df_input = pd.DataFrame(default_data, index=stakeholders)
 
-# Tabel interaktif
+# Editor Tabel yang bisa digeser/edit
 df_persepsi = st.data_editor(df_input, use_container_width=True)
 
-# 5. Mesin Komputasi (The Logic)
-df_tertimbang = df_persepsi.multiply(bobot_list, axis=0)
-hasil_akhir = df_tertimbang.sum()
-persentase = (hasil_akhir / hasil_akhir.sum()) * 100
+# 5. Perhitungan Logika CPLEP
+# a. Hitung rata-rata per kategori (S, P, K) untuk tiap stakeholder
+df_persepsi['Sikap_Avg'] = df_persepsi[sikap_cols].mean(axis=1)
+df_persepsi['Pengetahuan_Avg'] = df_persepsi[pengetahuan_cols].mean(axis=1)
+df_persepsi['Keterampilan_Avg'] = df_persepsi[keterampilan_cols].mean(axis=1)
 
-# 6. Baris Hasil (Metrik & Grafik)
+# b. Kalikan dengan Bobot Kepentingan
+df_weighted = pd.DataFrame(index=stakeholders)
+df_weighted['Sikap'] = df_persepsi['Sikap_Avg'] * bobot_list
+df_weighted['Pengetahuan'] = df_persepsi['Pengetahuan_Avg'] * bobot_list
+df_weighted['Keterampilan'] = df_persepsi['Keterampilan_Avg'] * bobot_list
+
+# c. Hasil Akhir
+total_skor = df_weighted.sum()
+persentase = (total_skor / total_skor.sum()) * 100
+
+# 6. Visualisasi & Laporan
 st.divider()
-col1, col2, col3 = st.columns([1, 2, 2])
+col1, col2 = st.columns([1, 1])
 
 with col1:
-    st.write("### 💎 Skor Akhir")
+    st.write("### 3. Estimasi Komposisi Ideal")
     for unsur, nilai in persentase.items():
-        st.metric(label=unsur, value=f"{nilai:.2f}%")
+        st.metric(label=f"Porsi {unsur}", value=f"{nilai:.2f} %")
+    
+    st.write("#### Detail Rata-rata per Kategori:")
+    st.dataframe(df_persepsi[['Sikap_Avg', 'Pengetahuan_Avg', 'Keterampilan_Avg']].style.highlight_max(axis=1))
 
 with col2:
-    # Grafik Pie
-    fig_pie = px.pie(
+    fig = px.pie(
         names=persentase.index, 
         values=persentase.values, 
+        title="Persentase S-P-K Akhir",
         hole=0.4,
-        title="Komposisi Proporsional",
         color_discrete_sequence=px.colors.qualitative.Pastel
     )
-    st.plotly_chart(fig_pie, use_container_width=True)
+    st.plotly_chart(fig)
 
-with col3:
-    # Grafik Batang untuk perbandingan tegas
-    fig_bar = px.bar(
-        x=persentase.index, 
-        y=persentase.values,
-        title="Distribusi Kompetensi",
-        labels={'x': 'Unsur', 'y': 'Persentase (%)'},
-        color=persentase.index,
-        color_discrete_sequence=px.colors.qualitative.Safe
-    )
-    st.plotly_chart(fig_bar, use_container_width=True)
-
-# 7. Narasi Kesimpulan Otomatis
-st.divider()
-st.write("### 📋 Kesimpulan Strategis")
-unsur_tertinggi = persentase.idxmax()
-st.success(f"Berdasarkan analisis, kurikulum ini harus memberikan penekanan utama pada unsur **{unsur_tertinggi}** ({persentase.max():.2f}%).")
-
-# Tombol Download Data
-csv = df_persepsi.to_csv().encode('utf-8')
-st.download_button(
-    label="📥 Download Data Matriks (CSV)",
-    data=csv,
-    file_name='matriks_stakeholder_cpl.csv',
-    mime='text/csv',
-)
+st.success("✅ Analisis Selesai: Gunakan hasil ini sebagai dasar penentuan bobot SKS atau distribusi mata kuliah.")
