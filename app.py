@@ -38,15 +38,47 @@ for s in stakeholders:
 
 # 4. Input Data Persepsi (Skala 1-4)
 st.write("### 2. Matriks Kepentingan Kompetensi")
-st.info("Silakan isi dengan skala 1-4 (1: Tidak Penting, 4: Sangat Penting)")
+st.info("Gunakan skala 1-4. Geser slider di kiri atau ubah angka di tabel untuk melihat perubahan.")
 
-# Template data awal (Default skala 3)
-if 'df_awal' not in st.session_state:
+# Template data awal (Gunakan session_state agar stabil)
+if 'df_input' not in st.session_state:
     default_data = {col: [3] * len(stakeholders) for col in all_cols}
-    st.session_state.df_awal = pd.DataFrame(default_data, index=stakeholders)
+    st.session_state.df_input = pd.DataFrame(default_data, index=stakeholders)
 
-# Editor Tabel
-df_persepsi = st.data_editor(st.session_state.df_awal, use_container_width=True)
+# Editor Tabel - Kita beri 'key' unik agar setiap ada perubahan, Streamlit lapor ke pusat
+df_persepsi = st.data_editor(st.session_state.df_input, use_container_width=True, key="my_editor")
+
+# 5. PERHITUNGAN REVISI (Pastikan semua variabel masuk ke sini)
+list_S_rumus = ["Integritas", "Kemandirian", "Kerjasama tim", "Komunikasi efektif", "Keterbukaan", "Etika dan Moral"]
+list_distribusi = ["Kerjasama tim", "Kreatif dan inovatif", "Tanggung jawab", "Empati dan peduli", "Kedisiplinan"]
+
+# a. Hitung total mentah per baris (per stakeholder)
+raw_S = df_persepsi[list_S_rumus].sum(axis=1)
+raw_dist = df_persepsi[list_distribusi].sum(axis=1)
+raw_P = df_persepsi[pengetahuan_cols].sum(axis=1)
+raw_K = df_persepsi[keterampilan_cols].sum(axis=1)
+
+# b. Terapkan Rumus Distribusi (S, P, K per Stakeholder)
+skor_S_baris = raw_S
+skor_P_baris = raw_P + (0.6 * raw_dist)
+skor_K_baris = raw_K + (0.4 * raw_dist)
+
+# c. PERBAIKAN UTAMA: Gabungkan skor dengan Bobot Kepentingan dari Sidebar
+# Kita paksa Python melakukan perkalian elemen-per-elemen (dot product)
+weighted_S = sum(skor_S_baris[i] * bobot_list[i] for i in range(len(stakeholders)))
+weighted_P = sum(skor_P_baris[i] * bobot_list[i] for i in range(len(stakeholders)))
+weighted_K = sum(skor_K_baris[i] * bobot_list[i] for i in range(len(stakeholders)))
+
+# d. Finalisasi Persentase
+total_matriks = weighted_S + weighted_P + weighted_K
+if total_matriks > 0:
+    porsi_S = (weighted_S / total_matriks) * 100
+    porsi_P = (weighted_P / total_matriks) * 100
+    porsi_K = (weighted_K / total_matriks) * 100
+else:
+    porsi_S = porsi_P = porsi_K = 0
+
+persentase = pd.Series({'Sikap': porsi_S, 'Pengetahuan': porsi_P, 'Keterampilan': porsi_K})
 
 # 5. PERHITUNGAN SESUAI RUMUS REVISI
 # List sesuai pengelompokan rumus Kang Yuhka
