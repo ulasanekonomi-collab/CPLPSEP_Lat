@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 
+st.set_page_config(page_title="Profil & CPL PSEP", page_icon="🎓", layout="wide")
+
 # 1. Konfigurasi Halaman
 st.set_page_config(page_title="Profil Lulusan & CPL", layout="wide")
 st.title("🎓 Tahap 2: Perumusan Profil & CPL")
