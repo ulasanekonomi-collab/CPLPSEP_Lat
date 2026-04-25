@@ -1,88 +1,37 @@
-import streamlit as st
-import pandas as pd
-import plotly.express as px
+# 5. PERHITUNGAN DENGAN RUMUS REVISI (Cross-Cutting Competency)
 
-# 1. Judul Aplikasi
-st.set_page_config(page_title="Penyelarasan CPLEP - Unisba", layout="wide")
-st.title("📊 Sistem Penyelarasan CPLEP")
-st.subheader("Estimasi Komposisi Kurikulum Berdasarkan Kepentingan Stakeholder")
+# a. Mendefinisikan kelompok sesuai simbol S1-S10, P1-P5, K1-K4
+# Sikap yang murni masuk ke S
+S_murni = ["Integritas", "Kemandirian", "Keterbukaan", "Etika dan Moral"] # S1, S2, S9, S10
+# Sikap yang didistribusikan (S3, S5, S6, S7, S8)
+S_distribusi = ["Kerjasama tim", "Kreatif dan inovatif", "Tanggung jawab", "Empati dan peduli", "Kedisiplinan"] 
+# Tambahkan S4 (Komunikasi Efektif) ke S_murni sesuai list Akang (S1, S2, S3, S4, S9, S10)
+# Tapi tunggu, di rumus Akang S3 masuk ke S, P, dan K. Mari kita ikuti persis rumus Akang:
 
-# 2. Definisi Struktur Stakeholder & Kolom
-stakeholders = [
-    "Mahasiswa", "PSEP", "Fakultas", "Universitas", "Yayasan", 
-    "LSP", "Bisnis", "Pemerintahan", "UCDC"
-]
+# b. Hitung Total per baris (per stakeholder)
+total_S_rumus = df_persepsi["Integritas"] + df_persepsi["Kemandirian"] + df_persepsi["Kerjasama tim"] + \
+                df_persepsi["Komunikasi efektif"] + df_persepsi["Keterbukaan"] + df_persepsi["Etika dan Moral"]
 
-# Definisi Sub-Unsur
-sikap_cols = [
-    "Integritas", "Kemandirian", "Kerjasama tim", "Komunikasi efektif", 
-    "Kreatif dan inovatif", "Tanggung jawab", "Empati dan peduli", 
-    "Kedisiplinan", "Keterbukaan", "Etika dan Moral"
-]
-pengetahuan_cols = [
-    "Kompetensi Inti Keilmuan", "Kompetensi Kuantitatif", 
-    "Kompetensi Kekhususan Dasar", "Kompetensi Keahlian", "Agama Islam"
-]
-keterampilan_cols = [
-    "Database", "Komputasi", "Presentasi", "Pengembangan Karir"
-]
+S_dist_total = df_persepsi["Kerjasama tim"] + df_persepsi["Kreatif dan inovatif"] + \
+               df_persepsi["Tanggung jawab"] + df_persepsi["Empati dan peduli"] + df_persepsi["Kedisiplinan"]
 
-all_cols = sikap_cols + pengetahuan_cols + keterampilan_cols
+total_P_murni = df_persepsi[pengetahuan_cols].sum(axis=1)
+total_K_murni = df_persepsi[keterampilan_cols].sum(axis=1)
 
-# 3. Sidebar: Bobot Kepentingan Stakeholder
-st.sidebar.header("1. Tingkat Kepentingan (1-5)")
-bobot_list = []
-for s in stakeholders:
-    b = st.sidebar.slider(f"Bobot {s}", 1, 5, 3)
-    bobot_list.append(b)
+# c. Terapkan Rumus Bobot (P + 0.6*dist dan K + 0.4*dist)
+skor_S = total_S_rumus
+skor_P = total_P_murni + (0.6 * S_dist_total)
+skor_K = total_K_murni + (0.4 * S_dist_total)
 
-# 4. Input Data Persepsi
-st.write("### 2. Matriks Persepsi Stakeholder")
-st.caption("Isi nilai (0-100) untuk setiap sub-unsur di bawah ini:")
+# d. Kalikan dengan Bobot Kepentingan Stakeholder (bobot_list dari sidebar)
+weighted_S = (skor_S * bobot_list).sum()
+weighted_P = (skor_P * bobot_list).sum()
+weighted_K = (skor_K * bobot_list).sum()
 
-# Membuat template data awal (default 80 agar tidak kosong)
-default_data = {col: [80] * len(stakeholders) for col in all_cols}
-df_input = pd.DataFrame(default_data, index=stakeholders)
-
-# Editor Tabel yang bisa digeser/edit
-df_persepsi = st.data_editor(df_input, use_container_width=True)
-
-# 5. Perhitungan Logika CPLEP
-# a. Hitung rata-rata per kategori (S, P, K) untuk tiap stakeholder
-df_persepsi['Sikap_Avg'] = df_persepsi[sikap_cols].mean(axis=1)
-df_persepsi['Pengetahuan_Avg'] = df_persepsi[pengetahuan_cols].mean(axis=1)
-df_persepsi['Keterampilan_Avg'] = df_persepsi[keterampilan_cols].mean(axis=1)
-
-# b. Kalikan dengan Bobot Kepentingan
-df_weighted = pd.DataFrame(index=stakeholders)
-df_weighted['Sikap'] = df_persepsi['Sikap_Avg'] * bobot_list
-df_weighted['Pengetahuan'] = df_persepsi['Pengetahuan_Avg'] * bobot_list
-df_weighted['Keterampilan'] = df_persepsi['Keterampilan_Avg'] * bobot_list
-
-# c. Hasil Akhir
-total_skor = df_weighted.sum()
-persentase = (total_skor / total_skor.sum()) * 100
-
-# 6. Visualisasi & Laporan
-st.divider()
-col1, col2 = st.columns([1, 1])
-
-with col1:
-    st.write("### 3. Estimasi Komposisi Ideal")
-    for unsur, nilai in persentase.items():
-        st.metric(label=f"Porsi {unsur}", value=f"{nilai:.2f} %")
-    
-    st.write("#### Detail Rata-rata per Kategori:")
-    st.dataframe(df_persepsi[['Sikap_Avg', 'Pengetahuan_Avg', 'Keterampilan_Avg']].style.highlight_max(axis=1))
-
-with col2:
-    fig = px.pie(
-        names=persentase.index, 
-        values=persentase.values, 
-        title="Persentase S-P-K Akhir",
-        hole=0.4,
-        color_discrete_sequence=px.colors.qualitative.Pastel
-    )
-    st.plotly_chart(fig)
-
-st.success("✅ Analisis Selesai: Gunakan hasil ini sebagai dasar penentuan bobot SKS atau distribusi mata kuliah.")
+# e. Normalisasi ke Persentase (Total Matriks)
+total_matriks = weighted_S + weighted_P + weighted_K
+persentase = pd.Series({
+    'Sikap': (weighted_S / total_matriks) * 100,
+    'Pengetahuan': (weighted_P / total_matriks) * 100,
+    'Keterampilan': (weighted_K / total_matriks) * 100
+})
