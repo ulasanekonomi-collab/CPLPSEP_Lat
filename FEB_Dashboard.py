@@ -32,3 +32,47 @@ st.text_area(f"Catatan Dekan untuk {prodi}:", "Dokumen sesuai standar OBE.")
 if st.button("Kirim Validasi Fakultas"):
     st.balloons()
     st.success("Rekomendasi Terkirim!")
+# --- BAGIAN BARU: INSTRUMEN STRESS TEST BERBASIS DOKUMEN ---
+st.divider()
+st.write("### 🧪 Instrumen Stress Test (Vertical Alignment Analysis)")
+st.info("Gunakan instrumen ini untuk memastikan Visi tidak berhenti di level normatif, tapi teroperasionalkan dalam sistem kurikulum.")
+
+# Pertanyaan kunci berdasarkan metode Stress Test Akang
+pertanyaan_audit = [
+    "Visi → CPL: Apakah elemen utama visi (Kemaslahatan & Society 5.0) telah diterjemahkan secara eksplisit dalam CPL?",
+    "CPL → Mata Kuliah: Apakah struktur mata kuliah telah merepresentasikan CPL secara proporsional?",
+    "Mata Kuliah → OBLT: Apakah aktivitas pembelajaran secara nyata melatih kompetensi yang sesuai dengan visi?",
+    "Pembelajaran → OBAE: Apakah capaian terkait visi dapat diukur secara objektif dan berbasis bukti?"
+]
+
+with st.expander("📝 Form Audit Kesesuaian Kurikulum"):
+    skor_audit = []
+    for i, tanya in enumerate(pertanyaan_audit):
+        st.write(f"**{tanya}**")
+        skor = st.select_slider(f"Penilaian Q{i+1}:", 
+                               options=["Sangat Lemah", "Lemah", "Cukup", "Kuat", "Sangat Kuat"], 
+                               key=f"st_audit_{i}")
+        skor_audit.append(skor)
+    
+    st.divider()
+    st.write("#### 🔍 Analisis Kesenjangan (Gap Analysis)")
+    catatan_gap = st.text_area("Masukkan temuan kesenjangan antara desain normatif dan implementasi operasional:", 
+                               placeholder="Contoh: Integrasi nilai kemaslahatan masih cenderung terpisah dalam mata kuliah tertentu...")
+
+# Tombol Eksekusi Analisis
+if st.button("Jalankan Uji Kesesuaian"):
+    st.subheader("🏁 Kesimpulan Stress Test")
+    
+    # Menampilkan hasil berdasarkan prinsip dokumen Akang
+    if "Sangat Lemah" in skor_audit or "Lemah" in skor_audit:
+        st.error("🚨 HASIL: Visi belum sepenuhnya terinternalisasi secara operasional.")
+        st.write("**Rekomendasi Langkah Lanjutan:**")
+        st.markdown("""
+        - **Refinement CPL:** Penajaman rumusan agar lebih operasional dan terukur[cite: 33].
+        - **Integrasi Mata Kuliah:** Menanamkan nilai kemaslahatan dalam mata kuliah inti ekonomi[cite: 25].
+        - **Penguatan OBAE:** Pengembangan instrumen asesmen untuk dimensi nilai dan teknologi[cite: 27].
+        """)
+    else:
+        st.success("✅ HASIL: Kurikulum telah memiliki landasan kuat secara filosofis dan operasional[cite: 23].")
+    
+    st.balloons()
