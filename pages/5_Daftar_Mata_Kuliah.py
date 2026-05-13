@@ -64,7 +64,7 @@ st.bar_chart(sks_per_sem)
 st.divider()
 if st.button("Finalisasi Struktur Kurikulum"):
     st.balloons()
-    st.success(f"Selamat Kang Yuhka! Struktur Kurikulum PSEP dengan total {total_sks} SKS telah berhasil difinalisasi.")
+    st.success(f"Struktur Kurikulum PSEP dengan total {total_sks} SKS telah berhasil difinalisasi.")
 
 st.download_button(
     label="📥 Unduh Daftar Mata Kuliah (Excel/CSV)",
